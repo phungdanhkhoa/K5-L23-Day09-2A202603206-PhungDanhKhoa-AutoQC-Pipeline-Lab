@@ -42,7 +42,17 @@ Lệnh `python -m pipeline.run --budget 0 --work work/run_nb --reports work/rep_
 
 ## 5. Train raw và clean
 
-Chưa có kết quả hoàn chỉnh. Lượt thử MPS cục bộ dừng vì tốc độ thấp. Đã khởi chạy lại bằng Tesla T4 trên Colab với `scripts/train_compare.py`, YOLO26n, 20 epoch, seed 0 và 1, ảnh 640 px và batch 16 cho cả hai biến thể. Cùng 40 ảnh val để chọn checkpoint và 100 ảnh test để đo cuối.
+Chạy bốn lượt bằng `scripts/train_compare.py` trên Colab Tesla T4, Ultralytics 8.4.214. Cả hai biến thể dùng cùng checkpoint `yolo26n.pt`, 20 epoch, seed 0 và 1, ảnh 640 px và batch 16. Dùng chung 40 ảnh val để chọn checkpoint và 100 ảnh test để đo cuối. Loader giữ **213/224** ảnh raw sau khi bỏ 11 ảnh/nhãn không hợp lệ, và giữ **205/205** ảnh clean. Bảng từ [comparison.md](results/comparison.md) ghi số ảnh trước khi loader lọc.
+
+| Biến thể | Ảnh train đầu vào | Số seed | mAP50 (TB ± SD) | mAP50–95 (TB ± SD) | Precision (TB ± SD) | Recall (TB ± SD) |
+|---|---:|---:|---:|---:|---:|---:|
+| raw | 224 | 2 | 0,726 ± 0,000 | 0,512 ± 0,004 | 0,764 ± 0,061 | 0,649 ± 0,028 |
+| clean | 205 | 2 | 0,682 ± 0,047 | 0,469 ± 0,025 | 0,718 ± 0,111 | 0,603 ± 0,012 |
+
+mAP50 của clean thấp hơn ở cả hai seed, với chênh lệch clean − raw lần lượt **−0,0768** và **−0,0102**. Mức giảm trung bình **0,0435** nhỏ hơn SD **0,0473** giữa hai seed clean. Hai seed cho thấy raw cao hơn trong lần đo này, còn độ ổn định và nguyên nhân của chênh lệch cần thêm dữ liệu.
+
+- Cửa nhận tìm thấy 4 ảnh raw trùng hoặc gần trùng ảnh test. Điểm raw có thể được lợi từ chồng lấn này. Để đo ảnh hưởng, cố định cấu hình rồi chạy đối chứng raw bỏ bốn ảnh rò rỉ, đánh giá trên cùng tập test.
+- Clean còn 64 ảnh có cảnh báo chưa duyệt. Lớp truck chỉ có 41/766 box và có mức giảm AP50 theo lớp lớn nhất (TB 0,648 → 0,514). Cần duyệt mẫu xe tải và xem xét chạy thêm seed trên cùng danh sách ảnh để tách ảnh hưởng của việc sửa nhãn khỏi việc thay đổi tập train.
 
 ## 6. Quyết định và ghi chú AI
 
@@ -53,3 +63,5 @@ Giữ **Hold**. Với 205 ảnh, điều kiện để Release là 0 lỗi bắt 
 - **Điểm AI phải sửa:** thử nghiệm cho thấy chỉ bắt `ValueError` như mô tả của parser sẽ làm ID lớp `inf` dừng check bằng `OverflowError`. Hai check xử lý cả hai ngoại lệ. Ca thử xác nhận dòng hỏng được ghi đúng số và các dòng khác vẫn được kiểm.
 
 **Kiểm bổ sung.** `python -m pipeline.checks.box_aspect --dataset work/run/ds --max-ratio 8 --out submission/evidence/box_aspect.csv` đo tỉ lệ cạnh theo pixel. Có [2 cờ trên 205 ảnh](evidence/box_aspect.csv): `img_0042` dòng 5 (9,58:1) và `img_0124` dòng 6 (9,11:1). Kiểm này chạy độc lập và chỉ cảnh báo để người duyệt phân biệt vật thật dài/mỏng với box lỗi. Bốn ca test bổ sung kiểm đơn vị pixel, ngưỡng đúng bằng giới hạn, dòng hỏng và tham số không hợp lệ.
+
+**CVAT.** Job 22 trên máy cục bộ dùng 22 ảnh lấy từ hàng đợi và nhãn sau sửa tự động. Bộ lọc [`width < 20`](evidence/cvat-width-rule.jpg) cho **22 box trên 12 ảnh đã đối chiếu**. Trong [bảng theo ảnh](evidence/cvat_width_comparison.csv), `img_0030` có [4 box khớp ở CVAT](evidence/cvat-width-result.jpg), trong đó dòng 9 là cờ `BOX_TINY` của pipeline (cạnh ngắn 9,81 px). CVAT lọc theo chiều rộng dưới 20 px, pipeline dùng cạnh ngắn dưới 12 px. Người gán có thể bật `can_review` khi biên hoặc lớp chưa chắc. Pipeline dùng mã cờ và độ tin cậy để ưu tiên các trường hợp tương tự.

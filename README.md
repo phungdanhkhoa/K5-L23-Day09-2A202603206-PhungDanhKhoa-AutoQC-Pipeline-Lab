@@ -6,7 +6,7 @@
 
 Kết luận cổng QC: **Hold**. Đã xuất bản nháp 205 ảnh để thử nghiệm. Sau lượt duyệt mô phỏng, còn 64/205 ảnh có cảnh báo chưa duyệt và 0 lỗi bắt buộc.
 
-[Báo cáo bài nộp](submission/REPORT.md) · [Kết quả cổng](submission/reports/08_summary.json) · [Calibration](submission/calibration/calibration_report.md) · [Manifest bản nháp](submission/export/clean_v1/manifest.json)
+[Báo cáo bài nộp](submission/REPORT.md) · [Kết quả cổng](submission/reports/08_summary.json) · [Calibration](submission/calibration/calibration_report.md) · [Manifest bản nháp](submission/export/clean_v1/manifest.json) · [So sánh train](submission/results/comparison.md)
 
 <p align="center">
   <img alt="cá nhân" src="https://img.shields.io/badge/lab-cá%20nhân-0b1f3a">
