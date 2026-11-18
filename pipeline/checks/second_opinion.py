@@ -35,10 +35,70 @@ Gợi ý
 - `iou_xywh` có sẵn. Dòng nhãn hỏng không được làm script chết (dùng `ds.valid_boxes` và `parse_yolo_line` trong try).
 - Kết quả phụ thuộc mạnh vào ngưỡng: calibrate chúng ở Bước 3 thay vì đoán.
 """
-from ..common import WARN, Issue, iou_xywh, parse_yolo_line  # noqa: F401
-from ..model_cache import get_preds  # noqa: F401
+from ..common import WARN, Issue, iou_xywh, parse_yolo_line
+from ..model_cache import get_preds
 
 
 def run(ds, cfg, preds=None):
-    # TODO
-    raise NotImplementedError("check second_opinion chưa làm")
+    if preds is None:
+        preds = get_preds(ds, cfg, "checker")
+    settings = cfg["second_opinion"]
+    min_iou = settings["iou_missing"]
+    issues = []
+    for path in ds.image_files():
+        stem = path.stem
+        if stem not in preds:
+            continue
+        lines = ds.read_label_lines(stem)
+        size = ds.image_size(stem)
+        if lines is None or size is None:
+            continue
+
+        labels = []
+        for number, raw in lines:
+            try:
+                cls, *box = parse_yolo_line(raw)
+            except (ValueError, OverflowError):
+                continue
+            if 0 <= cls < len(ds.classes) and box[2] > 0 and box[3] > 0:
+                labels.append((number, cls, box))
+
+        supported = set()
+        for cls, conf, *box in preds[stem]:
+            area = box[2] * box[3] * size[0] * size[1]
+            check_prediction = conf >= settings["conf"] and area >= settings["min_area_px"]
+            supports_label = conf >= settings["fp_conf"]
+            if not check_prediction and not supports_label:
+                continue
+
+            same, other = [], []
+            for number, label_cls, label_box in labels:
+                overlap = iou_xywh(box, label_box)
+                if overlap < min_iou:
+                    continue
+                if supports_label:
+                    supported.add(number)
+                (same if label_cls == cls else other).append(overlap)
+            if not check_prediction:
+                continue
+
+            extra = {"conf": conf, "class_id": cls, "box": box}
+            if not same and not other:
+                code, message = "POSSIBLE_MISSING", "model thấy vật chưa có box khớp"
+            elif same:
+                extra["iou"] = max(same)
+                if extra["iou"] >= settings["iou_loose"]:
+                    continue
+                code, message = "POSSIBLE_LOOSE_BOX", "box cùng lớp có IoU thấp với dự đoán"
+            else:
+                extra["iou"] = max(other)
+                if extra["iou"] < settings["iou_match"]:
+                    continue
+                code, message = "POSSIBLE_WRONG_CLASS", "box khớp hình học nhưng khác lớp dự đoán"
+            issues.append(Issue("second_opinion", WARN, code, stem, message, extra=extra))
+
+        for number, _, _ in labels:
+            if number not in supported:
+                issues.append(Issue("second_opinion", WARN, "POSSIBLE_FALSE_POS", stem,
+                                    "không có dự đoán đủ tin cậy khớp với box nhãn", number))
+    return issues
