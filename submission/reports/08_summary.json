@@ -1,0 +1,19 @@
+{
+  "verdict": {
+    "decision": "Hold",
+    "n_errors": 0,
+    "n_warn_images": 64,
+    "n_images": 205,
+    "warn_ratio": 0.3122,
+    "reasons": [
+      "0 lỗi bắt buộc",
+      "64/205 ảnh còn cảnh báo chưa duyệt (31.22% ≥ 10%)"
+    ]
+  },
+  "reviewed": 80,
+  "budget": 80,
+  "seconds": 3.5,
+  "exported": "/Users/khoa/Documents/Codex/2026-11-18/https-github-com-phungdanhkhoa-k5-l23/work/day09/submission/export/clean_v1",
+  "config_sha1": "51307975c39a880c5fc2f44a767398425d299e38",
+  "review_sim_sha1": "7988ca22827f780a7043a2300490e679a1697154"
+}

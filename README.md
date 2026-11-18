@@ -2,7 +2,11 @@
   <img src="docs/assets/hero.png" alt="Day 09 Lab: pipeline kiểm nhãn tự động" width="100%">
 </p>
 
-# Day 09 Lab — Pipeline kiểm nhãn tự động
+# Day 09 Lab — Phùng Danh Khoa: 2A202603206 - Phùng Danh Khoa
+
+Kết luận cổng QC: **Hold**. Đã xuất bản nháp 205 ảnh để thử nghiệm. Sau lượt duyệt mô phỏng, còn 64/205 ảnh có cảnh báo chưa duyệt và 0 lỗi bắt buộc.
+
+[Báo cáo bài nộp](submission/REPORT.md) · [Kết quả cổng](submission/reports/08_summary.json) · [Calibration](submission/calibration/calibration_report.md) · [Manifest bản nháp](submission/export/clean_v1/manifest.json)
 
 <p align="center">
   <img alt="cá nhân" src="https://img.shields.io/badge/lab-cá%20nhân-0b1f3a">
@@ -10,7 +14,7 @@
   <img alt="ảnh" src="https://img.shields.io/badge/dữ%20liệu-224%20ảnh-12b3a8">
   <img alt="python" src="https://img.shields.io/badge/python-3.9–3.13-3776ab">
   <img alt="gpu" src="https://img.shields.io/badge/GPU-chỉ%20để%20train-2fbf71">
-  <a href="https://colab.research.google.com/github/VinUni-AI20k/K5-L23-Day09-AutoQC-Pipeline-Lab/blob/main/notebooks/day09_train_compare.ipynb"><img alt="Mở trong Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a>
+  <a href="https://colab.research.google.com/github/phungdanhkhoa/K5-L23-Day09-2A202603206-PhungDanhKhoa-AutoQC-Pipeline-Lab/blob/main/notebooks/day09_train_compare.ipynb"><img alt="Mở trong Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a>
 </p>
 
 > **Máy kiểm quy tắc, người kiểm ý nghĩa.** Bạn xây một pipeline chạy bằng MỘT lệnh, rồi **đo** (số liệu, trung thực) xem nó có ích không.
