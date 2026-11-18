@@ -42,7 +42,7 @@ Lệnh `python -m pipeline.run --budget 0 --work work/run_nb --reports work/rep_
 
 ## 5. Train raw và clean
 
-Chưa có kết quả hoàn chỉnh. Đang chạy `scripts/train_compare.py` trên GPU Apple M1 (MPS), YOLO26n, 20 epoch, seed 0 và 1, ảnh 416 px và batch 8 cho cả hai biến thể. Cùng 40 ảnh val để chọn checkpoint và 100 ảnh test để đo cuối.
+Chưa có kết quả hoàn chỉnh. Lượt thử MPS cục bộ dừng vì tốc độ thấp. Đã khởi chạy lại bằng Tesla T4 trên Colab với `scripts/train_compare.py`, YOLO26n, 20 epoch, seed 0 và 1, ảnh 640 px và batch 16 cho cả hai biến thể. Cùng 40 ảnh val để chọn checkpoint và 100 ảnh test để đo cuối.
 
 ## 6. Quyết định và ghi chú AI
 
@@ -51,3 +51,5 @@ Giữ **Hold**. Với 205 ảnh, điều kiện để Release là 0 lỗi bắt 
 - **Prompt chính dùng với Codex:** đọc docstring và test của bốn module. Nhận YOLO `id cx cy w h` chuẩn hoá và dự đoán kèm confidence, đối chiếu hình học theo YAML và sinh `Issue` có mã, ảnh, dòng. Sửa trên bản sao, ghi trước/sau, chuyển lỗi ngữ nghĩa sang người, trả phán quyết có số liệu. Giữ nguyên dữ liệu, test và các file được ghim.
 - **Kiểm tra với Codex:** 79 test gốc, hai sweep trên lỗi chèn, bộ ca tổng hợp gồm dòng trống, lỗi kép, nhiều dự đoán, và chạy pipeline đủ ngân sách lẫn ngân sách 0. Codex hỗ trợ viết code và báo cáo. Người nộp cần đọc và giải thích được code theo quy định lab.
 - **Điểm AI phải sửa:** thử nghiệm cho thấy chỉ bắt `ValueError` như mô tả của parser sẽ làm ID lớp `inf` dừng check bằng `OverflowError`. Hai check xử lý cả hai ngoại lệ. Ca thử xác nhận dòng hỏng được ghi đúng số và các dòng khác vẫn được kiểm.
+
+**Kiểm bổ sung.** `python -m pipeline.checks.box_aspect --dataset work/run/ds --max-ratio 8 --out submission/evidence/box_aspect.csv` đo tỉ lệ cạnh theo pixel. Có [2 cờ trên 205 ảnh](evidence/box_aspect.csv): `img_0042` dòng 5 (9,58:1) và `img_0124` dòng 6 (9,11:1). Kiểm này chạy độc lập và chỉ cảnh báo để người duyệt phân biệt vật thật dài/mỏng với box lỗi. Bốn ca test bổ sung kiểm đơn vị pixel, ngưỡng đúng bằng giới hạn, dòng hỏng và tham số không hợp lệ.

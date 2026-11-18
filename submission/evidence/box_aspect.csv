@@ -1,0 +1,3 @@
+check,severity,code,image,line,message,extra
+box_aspect,warn,BOX_ASPECT_EXTREME,img_0042,5,tỉ lệ cạnh 9.58:1 vượt 8:1,"{""width_px"": 25.142400000000002, ""height_px"": 240.82982399999997}"
+box_aspect,warn,BOX_ASPECT_EXTREME,img_0124,6,tỉ lệ cạnh 9.11:1 vượt 8:1,"{""width_px"": 118.43968000000001, ""height_px"": 12.999839999999999}"
