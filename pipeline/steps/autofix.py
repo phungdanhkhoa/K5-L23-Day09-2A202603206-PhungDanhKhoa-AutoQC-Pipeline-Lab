@@ -27,13 +27,80 @@ Bẫy cần nghĩ tới (có test cho từng cái)
 
 Gợi ý: `yaml.safe_load / safe_dump`.
 """
-from collections import defaultdict  # noqa: F401
+from collections import defaultdict
 
-import yaml  # noqa: F401
+import yaml
 
-from ..common import ERROR, parse_yolo_line  # noqa: F401
+from ..common import ERROR, ROOT, parse_yolo_line
+
+DROP_CODES = {"BAD_FORMAT", "BAD_CLASS_ID", "BOX_ZERO", "DUP_BOX"}
+REMOVE_CODES = {"LEAK_TEST", "CORRUPT_IMAGE", "BAD_SIZE"}
+
+
+def _clipped_label(raw):
+    cls, cx, cy, w, h = parse_yolo_line(raw)
+    left, right = max(0, cx - w / 2), min(1, cx + w / 2)
+    top, bottom = max(0, cy - h / 2), min(1, cy + h / 2)
+    if left >= right or top >= bottom:
+        return ""
+    values = ((left + right) / 2, (top + bottom) / 2, right - left, bottom - top)
+    return " ".join([str(cls), *(format(value, ".16g") for value in values)])
 
 
 def fix(ds, issues, cfg):
-    # TODO
-    raise NotImplementedError("autofix chưa làm")
+    raw = (ROOT / "data/raw").resolve()
+    if ds.root.resolve().is_relative_to(raw):
+        raise ValueError("autofix chỉ chạy trên bản sao làm việc")
+
+    errors = [issue for issue in issues if issue.severity == ERROR]
+    removed = {i.image for i in errors if i.code in REMOVE_CODES or i.code.startswith("DUP_IMAGE_")}
+    changes = []
+    for image in ds.image_files():
+        if image.stem in removed:
+            image.unlink()
+            ds.label_path(image.stem).unlink(missing_ok=True)
+            changes.append(dict(image=image.stem, line="", action="remove_image", before=image.name, after=""))
+
+    if any(i.code == "BAD_CLASS_NAME" for i in errors):
+        path = ds.yaml_path
+        data = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
+        if data.get("names") != cfg["classes"]:
+            before = data.get("names")
+            data["names"] = list(cfg["classes"])
+            path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
+            changes.append(dict(image="data.yaml", line="", action="rename_classes", before=before, after=data["names"]))
+
+    needs_label = {i.image for i in errors if i.code == "MISSING_LABEL_FILE"} - removed
+    for stem in sorted(needs_label):
+        if not ds.label_path(stem).exists():
+            changes.append(dict(image=stem, line="", action="needs_label", before="(không có file)", after="chuyển người gán"))
+
+    by_file = defaultdict(lambda: defaultdict(set))
+    for issue in errors:
+        if issue.image not in removed and issue.line is not None:
+            by_file[issue.image][issue.line].add(issue.code)
+
+    for stem, by_line in sorted(by_file.items()):
+        path = ds.label_path(stem)
+        if not path.is_file():
+            continue
+        kept = []
+        changed = False
+        for number, raw_line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            codes = by_line.get(number, set())
+            if codes & DROP_CODES:
+                after = ""
+            elif "BOX_OUT_OF_IMAGE" in codes:
+                after = _clipped_label(raw_line)
+            else:
+                kept.append(raw_line)
+                continue
+            if after:
+                kept.append(after)
+            if after != raw_line:
+                changed = True
+                changes.append(dict(image=stem, line=number, action="clip_box" if after else "drop_line",
+                                    before=raw_line, after=after))
+        if changed:
+            path.write_text("".join(line + "\n" for line in kept), encoding="utf-8")
+    return changes
